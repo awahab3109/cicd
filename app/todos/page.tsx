@@ -12,7 +12,7 @@ async function getTodos(): Promise<Todo[]> {
   });
   
   if (!res.ok) {
-    throw new Error('Failed to fetch todos');
+    throw new Error('Failesdd to fetch todos');
   }
   
   return res.json();
