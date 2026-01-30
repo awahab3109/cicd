@@ -22,6 +22,7 @@ jobs:
           script: |
             cd ${{ secrets.APP_PATH }}
             git pull origin main
-            npm install
+            npm ci
             npm run build
             pm2 restart nextjs-app || pm2 start npm --name "nextjs-app" -- start
+          timeout: 600 # timeout in seconds (10 min)
