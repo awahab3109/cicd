@@ -3,26 +3,41 @@ name: Deploy Next.js to EC2
 on:
   push:
     branches:
-      - main
+      - main  # deploy only on main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image locally
+        run: |
+          docker build -t nextjs-app:latest .
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
           script: |
-            cd ${{ secrets.APP_PATH }}
-            git pull origin main
-            npm ci
-            npm run build
-            pm2 restart nextjs-app || pm2 start npm --name "nextjs-app" -- start
-          timeout: 600 # timeout in seconds (10 min)
+            mkdir -p ~/app
+            cd ~/app
+            # Optional: Remove old container if exists
+            docker stop nextjs-app || true
+            docker rm nextjs-app || true
+            # Copy project files
+            rm -rf ./*
+            # We will copy from GitHub Actions via scp
+            echo "Files will be copied via Docker build context"
+            # Build Docker image on EC2
+            docker build -t nextjs-app:latest .
+            # Run container
+            docker run -d --name nextjs-app -p 3000:3000 nextjs-app:latest
